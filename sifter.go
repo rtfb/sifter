@@ -2,12 +2,20 @@ package main
 
 import (
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/docopt/docopt.go"
 )
+
+type visitor struct {
+	allStrings []string
+	tFunc      string
+}
 
 func getAllFiles(siftParam string) []string {
 	var files []string
@@ -50,6 +58,70 @@ func isDir(file string) (bool, error) {
 	return false, nil
 }
 
+func (v *visitor) parseAllFiles(files []string) {
+	for _, fileName := range files {
+		fset := token.NewFileSet()
+		f, err := parser.ParseFile(fset, fileName, nil, 0)
+		if err != nil {
+			panic(err) // XXX: better error handling
+		}
+		ast.Walk(v, f)
+	}
+}
+
+func getTFuncName(stmt *ast.AssignStmt) (string, bool) {
+	name := ""
+	if len(stmt.Lhs) > 0 {
+		if id, ok := stmt.Lhs[0].(*ast.Ident); ok {
+			name = id.Name
+		}
+	}
+	for _, exp := range stmt.Rhs {
+		if call, ok := exp.(*ast.CallExpr); ok {
+			if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
+				//fmt.Printf("sel.X=%+v\n", sel.X)
+				//fmt.Printf("sel.Sel=%+v\n", *sel.Sel)
+				if fmt.Sprintf("%s.%s", sel.X, (*sel.Sel).Name) == "i18n.MustTfunc" {
+					return name, true
+				}
+			}
+		}
+	}
+	return "", false
+}
+
+func (v *visitor) Visit(node ast.Node) ast.Visitor {
+	switch n := node.(type) {
+	case *ast.CallExpr:
+		if v.tFunc == "" || v.allStrings == nil {
+			return v // Don't do anything until we have tFunc
+		}
+		call, _ := n.Fun.(*ast.Ident)
+		if call != nil && call.Name == v.tFunc {
+			for _, a := range n.Args {
+				switch b := a.(type) {
+				case *ast.BasicLit:
+					if b.Kind == token.STRING {
+						fmt.Printf("%+v\n", b.Value)
+						v.allStrings = append(v.allStrings, b.Value)
+					}
+				default:
+					fmt.Printf("%#v\n", b)
+				}
+			}
+		}
+	case *ast.AssignStmt:
+		if v.tFunc != "" {
+			return v // Don't redefine tFunc if we already have one
+		}
+		if tFunc, ok := getTFuncName(n); ok {
+			fmt.Printf("OK, tfunc = %q\n", tFunc)
+			v.tFunc = tFunc
+		}
+	}
+	return v
+}
+
 func main() {
 	usage := `Sifter. Sifts code for untranslated strings.
 
@@ -66,7 +138,20 @@ Options:
   --version     Show version.`
 
 	arguments, _ := docopt.Parse(usage, nil, true, "Sifter 0.1", false)
+	var v visitor
 	allFiles := getAllFiles(arguments["<path>"].(string))
 	fmt.Printf("%#v\n", allFiles)
+	v.parseAllFiles(allFiles)
+	if v.tFunc != "" {
+		// Now when we have a tFunc, walk the files again, looking for the
+		// strings:
+		v.allStrings = make([]string, 0, 0)
+		v.parseAllFiles(allFiles)
+	} else {
+		println("Warning: no Tfunc found!")
+	}
+	for _, str := range v.allStrings {
+		println(str)
+	}
 	return
 }
