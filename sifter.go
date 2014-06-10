@@ -110,9 +110,9 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 				switch b := a.(type) {
 				case *ast.BasicLit:
 					if b.Kind == token.STRING {
-						fmt.Printf("%+v\n", b.Value)
+						unquoted := b.Value[1:len(b.Value)-1]
 						v.allStrings = append(v.allStrings, LocalizedString{
-							String:     b.Value,
+							String:     unquoted,
 							SourceFile: "",
 							SourceLine: 0,
 						})
