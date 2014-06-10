@@ -176,14 +176,14 @@ Options:
 	allFiles := getAllFiles(arguments["<path>"].(string), ".go")
 	fmt.Printf("%#v\n", allFiles)
 	v.parseAllFiles(allFiles)
-	if v.tFunc != "" {
-		// Now when we have a tFunc, walk the files again, looking for the
-		// strings:
-		v.allStrings = make([]LocalizedString, 0, 0)
-		v.parseAllFiles(allFiles)
-	} else {
-		println("Warning: no Tfunc found!")
+	if v.tFunc == "" {
+		println("Error: no Tfunc found!")
+		return
 	}
+	// Now when we have a tFunc, walk the files again, looking for the strings:
+	v.allStrings = make([]LocalizedString, 0, 0)
+	v.parseAllFiles(allFiles)
+	// Also sift templates:
 	allTemplates := getAllFiles(arguments["<tmpl>"].(string), ".html")
 	v.allStrings = append(v.allStrings, parseTemplates(allTemplates)...)
 	for _, str := range v.allStrings {
