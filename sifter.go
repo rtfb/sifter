@@ -5,8 +5,10 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/docopt/docopt.go"
@@ -132,6 +134,26 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	return v
 }
 
+func parseTemplates(tmpls []string) []LocalizedString {
+	var results []LocalizedString
+	re := regexp.MustCompile(`{{L10n "(.*)"}}`)
+	for _, template := range tmpls {
+		data, err := ioutil.ReadFile(template)
+		if err != nil {
+			panic(err) // XXX: better error handling
+		}
+		m := re.FindAllSubmatch(data, -1)
+		for _, i := range m {
+			results = append(results, LocalizedString{
+				String:     string(i[1]),
+				SourceFile: template,
+				SourceLine: 0,
+			})
+		}
+	}
+	return results
+}
+
 func main() {
 	usage := `Sifter. Sifts code for untranslated strings.
 
@@ -160,8 +182,10 @@ Options:
 	} else {
 		println("Warning: no Tfunc found!")
 	}
+	allTemplates := getAllFiles(arguments["<tmpl>"].(string), ".html")
+	v.allStrings = append(v.allStrings, parseTemplates(allTemplates)...)
 	for _, str := range v.allStrings {
-		println(str.String)
+		fmt.Printf("%s (%d): %q\n", str.SourceFile, str.SourceLine, str.String)
 	}
 	return
 }
