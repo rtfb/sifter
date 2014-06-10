@@ -17,6 +17,7 @@ import (
 type visitor struct {
 	allStrings []LocalizedString
 	tFunc      string
+	fileSet    *token.FileSet
 }
 
 type LocalizedString struct {
@@ -68,8 +69,8 @@ func isDir(file string) (bool, error) {
 
 func (v *visitor) parseAllFiles(files []string) {
 	for _, fileName := range files {
-		fset := token.NewFileSet()
-		f, err := parser.ParseFile(fset, fileName, nil, 0)
+		v.fileSet = token.NewFileSet()
+		f, err := parser.ParseFile(v.fileSet, fileName, nil, 0)
 		if err != nil {
 			panic(err) // XXX: better error handling
 		}
@@ -110,11 +111,12 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 				switch b := a.(type) {
 				case *ast.BasicLit:
 					if b.Kind == token.STRING {
+						pos := v.fileSet.Position(b.Pos())
 						unquoted := b.Value[1:len(b.Value)-1]
 						v.allStrings = append(v.allStrings, LocalizedString{
 							String:     unquoted,
-							SourceFile: "",
-							SourceLine: 0,
+							SourceFile: pos.Filename,
+							SourceLine: pos.Line,
 						})
 					}
 				default:
