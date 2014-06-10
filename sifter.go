@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -12,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/docopt/docopt.go"
+	"github.com/nicksnyder/go-i18n/i18n/translation"
 )
 
 type visitor struct {
@@ -156,6 +158,28 @@ func parseTemplates(tmpls []string) []LocalizedString {
 	return results
 }
 
+func loadGoi18nJson(path string) ([]translation.Translation, error) {
+	fileBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var translationsData []map[string]interface{}
+	if len(fileBytes) > 0 {
+		if err := json.Unmarshal(fileBytes, &translationsData); err != nil {
+			return nil, err
+		}
+	}
+	translations := make([]translation.Translation, 0, len(translationsData))
+	for i, translationData := range translationsData {
+		t, err := translation.NewTranslation(translationData)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse translation #%d in %s because %s\n%v", i, path, err, translationData)
+		}
+		translations = append(translations, t)
+	}
+	return translations, nil
+}
+
 func main() {
 	usage := `Sifter. Sifts code for untranslated strings.
 
@@ -163,7 +187,7 @@ Looks in all *.go files under path if path is a directory or treats path as
 wildcard if it is not.
 
 Usage:
-  sift <path> <tmpl>
+  sift <path> <tmpl> <json>
   sift -h | --help
   sift --version
 
@@ -188,6 +212,13 @@ Options:
 	v.allStrings = append(v.allStrings, parseTemplates(allTemplates)...)
 	for _, str := range v.allStrings {
 		fmt.Printf("%s (%d): %q\n", str.SourceFile, str.SourceLine, str.String)
+	}
+	xlats, err := loadGoi18nJson(arguments["<json>"].(string))
+	if err != nil {
+		panic(err) // XXX: better error handling
+	}
+	for _, xl := range xlats {
+		fmt.Printf("xlat: %q\n", xl.ID())
 	}
 	return
 }
