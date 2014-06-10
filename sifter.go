@@ -17,14 +17,14 @@ type visitor struct {
 	tFunc      string
 }
 
-func getAllFiles(siftParam string) []string {
+func getAllFiles(siftParam, ext string) []string {
 	var files []string
 	if dir, err := isDir(siftParam); err == nil && dir {
 		filepath.Walk(siftParam, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
-			if info.Mode().IsRegular() && strings.HasSuffix(path, ".go") {
+			if info.Mode().IsRegular() && strings.HasSuffix(path, ext) {
 				files = append(files, path)
 			}
 			return nil
@@ -129,7 +129,7 @@ Looks in all *.go files under path if path is a directory or treats path as
 wildcard if it is not.
 
 Usage:
-  sift <path>
+  sift <path> <tmpl>
   sift -h | --help
   sift --version
 
@@ -139,7 +139,7 @@ Options:
 
 	arguments, _ := docopt.Parse(usage, nil, true, "Sifter 0.1", false)
 	var v visitor
-	allFiles := getAllFiles(arguments["<path>"].(string))
+	allFiles := getAllFiles(arguments["<path>"].(string), ".go")
 	fmt.Printf("%#v\n", allFiles)
 	v.parseAllFiles(allFiles)
 	if v.tFunc != "" {
