@@ -13,8 +13,14 @@ import (
 )
 
 type visitor struct {
-	allStrings []string
+	allStrings []LocalizedString
 	tFunc      string
+}
+
+type LocalizedString struct {
+	String     string
+	SourceFile string
+	SourceLine int
 }
 
 func getAllFiles(siftParam, ext string) []string {
@@ -103,7 +109,11 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 				case *ast.BasicLit:
 					if b.Kind == token.STRING {
 						fmt.Printf("%+v\n", b.Value)
-						v.allStrings = append(v.allStrings, b.Value)
+						v.allStrings = append(v.allStrings, LocalizedString{
+							String:     b.Value,
+							SourceFile: "",
+							SourceLine: 0,
+						})
 					}
 				default:
 					fmt.Printf("%#v\n", b)
@@ -145,13 +155,13 @@ Options:
 	if v.tFunc != "" {
 		// Now when we have a tFunc, walk the files again, looking for the
 		// strings:
-		v.allStrings = make([]string, 0, 0)
+		v.allStrings = make([]LocalizedString, 0, 0)
 		v.parseAllFiles(allFiles)
 	} else {
 		println("Warning: no Tfunc found!")
 	}
 	for _, str := range v.allStrings {
-		println(str)
+		println(str.String)
 	}
 	return
 }
