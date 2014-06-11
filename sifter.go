@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -184,6 +185,22 @@ func loadGoi18nJson(path string) (map[string]translation.Translation, error) {
 	return result, nil
 }
 
+func mkUntranslatedName(json string) string {
+	parts := strings.Split(json, ".")
+	return fmt.Sprintf("%s.untranslated.json", parts[0])
+}
+
+func writeUntranslated(filename string, untranslated []translation.Translation) error {
+	buf, err := json.MarshalIndent(untranslated, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(filename, buf, 0666); err != nil {
+		return fmt.Errorf("failed to write %s because %s", filename, err)
+	}
+	return nil
+}
+
 func main() {
 	usage := `Sifter. Sifts code for untranslated strings.
 
@@ -217,9 +234,16 @@ Options:
 	for _, str := range v.allStrings {
 		fmt.Printf("%s (%d): %q\n", str.SourceFile, str.SourceLine, str.String)
 	}
-	_, err := loadGoi18nJson(arguments["<json>"].(string))
+	json := arguments["<json>"].(string)
+	_, err := loadGoi18nJson(json)
 	if err != nil {
 		panic(err) // XXX: better error handling
+	}
+	untranslated := make([]translation.Translation, 0, 0)
+	filename := mkUntranslatedName(path.Base(json))
+	err = writeUntranslated(filename, untranslated)
+	if err != nil {
+		panic(err)
 	}
 	return
 }
