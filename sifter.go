@@ -158,7 +158,7 @@ func parseTemplates(tmpls []string) []LocalizedString {
 	return results
 }
 
-func loadGoi18nJson(path string) ([]translation.Translation, error) {
+func loadGoi18nJson(path string) (map[string]translation.Translation, error) {
 	fileBytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -177,7 +177,11 @@ func loadGoi18nJson(path string) ([]translation.Translation, error) {
 		}
 		translations = append(translations, t)
 	}
-	return translations, nil
+	result := make(map[string]translation.Translation)
+	for _, t := range translations {
+		result[t.ID()] = t
+	}
+	return result, nil
 }
 
 func main() {
@@ -213,12 +217,9 @@ Options:
 	for _, str := range v.allStrings {
 		fmt.Printf("%s (%d): %q\n", str.SourceFile, str.SourceLine, str.String)
 	}
-	xlats, err := loadGoi18nJson(arguments["<json>"].(string))
+	_, err := loadGoi18nJson(arguments["<json>"].(string))
 	if err != nil {
 		panic(err) // XXX: better error handling
-	}
-	for _, xl := range xlats {
-		fmt.Printf("xlat: %q\n", xl.ID())
 	}
 	return
 }
