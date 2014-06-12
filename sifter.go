@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"strconv"
 
 	"github.com/docopt/docopt.go"
 	"github.com/nicksnyder/go-i18n/i18n/translation"
@@ -115,7 +116,10 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 				case *ast.BasicLit:
 					if b.Kind == token.STRING {
 						pos := v.fileSet.Position(b.Pos())
-						unquoted := b.Value[1:len(b.Value)-1]
+						unquoted, err := strconv.Unquote(b.Value)
+						if err != nil {
+							panic(err)
+						}
 						v.allStrings = append(v.allStrings, LocalizedString{
 							String:     unquoted,
 							SourceFile: pos.Filename,
