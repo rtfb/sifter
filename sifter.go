@@ -145,7 +145,7 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 
 func parseTemplates(tmpls []string) []LocalizedString {
 	var results []LocalizedString
-	re := regexp.MustCompile(`{{L10n "(.*)"}}`)
+	re := regexp.MustCompile(`{{L10n (".*")}}`)
 	for _, template := range tmpls {
 		data, err := ioutil.ReadFile(template)
 		if err != nil {
@@ -153,8 +153,12 @@ func parseTemplates(tmpls []string) []LocalizedString {
 		}
 		m := re.FindAllSubmatch(data, -1)
 		for _, i := range m {
+			unquoted, err := strconv.Unquote(string(i[1]))
+			if err != nil {
+				panic(err)
+			}
 			results = append(results, LocalizedString{
-				String:     string(i[1]),
+				String:     unquoted,
 				SourceFile: template,
 				SourceLine: 0,
 			})
