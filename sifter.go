@@ -198,8 +198,16 @@ func mkUntranslatedName(json string) string {
 	return fmt.Sprintf("%s.untranslated.json", parts[0])
 }
 
+func marshalInterface(translations []translation.Translation) []interface{} {
+	mi := make([]interface{}, len(translations))
+	for i, translation := range translations {
+		mi[i] = translation.MarshalInterface()
+	}
+	return mi
+}
+
 func writeUntranslated(filename string, untranslated []translation.Translation) error {
-	buf, err := json.MarshalIndent(untranslated, "", "  ")
+	buf, err := json.MarshalIndent(marshalInterface(untranslated), "", "  ")
 	if err != nil {
 		return err
 	}
