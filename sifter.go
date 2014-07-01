@@ -217,6 +217,27 @@ func writeUntranslated(filename string, untranslated []translation.Translation) 
 	return nil
 }
 
+func sift(goPath, templatesPath string) []LocalizedString {
+	var v visitor
+	allFiles := getAllFiles(goPath, ".go")
+	fmt.Printf("%#v\n", allFiles)
+	v.parseAllFiles(allFiles)
+	if v.tFunc == "" {
+		println("Error: no Tfunc found!")
+		return nil
+	}
+	// Now when we have a tFunc, walk the files again, looking for the strings:
+	v.allStrings = make([]LocalizedString, 0, 0)
+	v.parseAllFiles(allFiles)
+	// Also sift templates:
+	allTemplates := getAllFiles(templatesPath, ".html")
+	v.allStrings = append(v.allStrings, parseTemplates(allTemplates)...)
+	for _, str := range v.allStrings {
+		fmt.Printf("%s (%d): %q\n", str.SourceFile, str.SourceLine, str.String)
+	}
+	return v.allStrings
+}
+
 func main() {
 	usage := `Sifter. Sifts code for untranslated strings.
 
@@ -233,30 +254,14 @@ Options:
   --version     Show version.`
 
 	arguments, _ := docopt.Parse(usage, nil, true, "Sifter 0.1", false)
-	var v visitor
-	allFiles := getAllFiles(arguments["<path>"].(string), ".go")
-	fmt.Printf("%#v\n", allFiles)
-	v.parseAllFiles(allFiles)
-	if v.tFunc == "" {
-		println("Error: no Tfunc found!")
-		return
-	}
-	// Now when we have a tFunc, walk the files again, looking for the strings:
-	v.allStrings = make([]LocalizedString, 0, 0)
-	v.parseAllFiles(allFiles)
-	// Also sift templates:
-	allTemplates := getAllFiles(arguments["<tmpl>"].(string), ".html")
-	v.allStrings = append(v.allStrings, parseTemplates(allTemplates)...)
-	for _, str := range v.allStrings {
-		fmt.Printf("%s (%d): %q\n", str.SourceFile, str.SourceLine, str.String)
-	}
+	allStrings := sift(arguments["<path>"].(string), arguments["<tmpl>"].(string))
 	json := arguments["<json>"].(string)
 	translated, err := loadGoi18nJson(json)
 	if err != nil {
 		panic(err) // XXX: better error handling
 	}
 	untranslated := make([]translation.Translation, 0, 0)
-	for _, xl := range v.allStrings {
+	for _, xl := range allStrings {
 		_, ok := translated[xl.String]
 		if !ok {
 			fmt.Printf("%s\n", xl.String)
