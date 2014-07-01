@@ -11,8 +11,8 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/docopt/docopt.go"
 	"github.com/nicksnyder/go-i18n/i18n/translation"
@@ -46,7 +46,7 @@ func getAllFiles(siftParam, ext string) []string {
 	}
 	// TODO: add code to treat siftParam as a wildcard
 	//if isGlob() {
-		//return expandGlob()
+	//return expandGlob()
 	//}
 	files = append(files, siftParam)
 	return files
