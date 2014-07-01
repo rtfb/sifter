@@ -238,6 +238,26 @@ func sift(goPath, templatesPath string) []LocalizedString {
 	return v.allStrings
 }
 
+func filterUntranslated(translated map[string]translation.Translation,
+	sifted []LocalizedString) []translation.Translation {
+	untranslated := make([]translation.Translation, 0, 0)
+	for _, xl := range sifted {
+		_, ok := translated[xl.String]
+		if !ok {
+			fmt.Printf("%s\n", xl.String)
+			t, err := translation.NewTranslation(map[string]interface{}{
+				"id":          xl.String,
+				"translation": "",
+			})
+			if err != nil {
+				panic(err)
+			}
+			untranslated = append(untranslated, t)
+		}
+	}
+	return untranslated
+}
+
 func main() {
 	usage := `Sifter. Sifts code for untranslated strings.
 
@@ -260,21 +280,7 @@ Options:
 	if err != nil {
 		panic(err) // XXX: better error handling
 	}
-	untranslated := make([]translation.Translation, 0, 0)
-	for _, xl := range allStrings {
-		_, ok := translated[xl.String]
-		if !ok {
-			fmt.Printf("%s\n", xl.String)
-			t, err := translation.NewTranslation(map[string]interface{}{
-				"id":          xl.String,
-				"translation": "",
-			})
-			if err != nil {
-				panic(err)
-			}
-			untranslated = append(untranslated, t)
-		}
-	}
+	untranslated := filterUntranslated(translated, allStrings)
 	filename := mkUntranslatedName(path.Base(json))
 	err = writeUntranslated(filename, untranslated)
 	if err != nil {
