@@ -92,9 +92,8 @@ func getTFuncName(stmt *ast.AssignStmt) (string, bool) {
 	for _, exp := range stmt.Rhs {
 		if call, ok := exp.(*ast.CallExpr); ok {
 			if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
-				//fmt.Printf("sel.X=%+v\n", sel.X)
-				//fmt.Printf("sel.Sel=%+v\n", *sel.Sel)
-				if fmt.Sprintf("%s.%s", sel.X, (*sel.Sel).Name) == "i18n.MustTfunc" {
+				selStmt := fmt.Sprintf("%s.%s", sel.X, (*sel.Sel).Name)
+				if selStmt == "i18n.MustTfunc" || selStmt == "i18n.Tfunc" {
 					return name, true
 				}
 			}
