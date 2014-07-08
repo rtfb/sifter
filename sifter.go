@@ -30,6 +30,8 @@ type LocalizedString struct {
 	SourceLine int
 }
 
+type StringMap map[string]translation.Translation
+
 func getAllFiles(siftParam, ext string) []string {
 	var files []string
 	if dir, err := isDir(siftParam); err == nil && dir {
@@ -166,7 +168,7 @@ func parseTemplates(tmpls []string) []LocalizedString {
 	return results
 }
 
-func loadGoi18nJson(path string) (map[string]translation.Translation, error) {
+func loadGoi18nJson(path string) (StringMap, error) {
 	fileBytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -185,7 +187,7 @@ func loadGoi18nJson(path string) (map[string]translation.Translation, error) {
 		}
 		translations = append(translations, t)
 	}
-	result := make(map[string]translation.Translation)
+	result := make(StringMap)
 	for _, t := range translations {
 		result[t.ID()] = t
 	}
@@ -197,15 +199,15 @@ func mkUntranslatedName(json string) string {
 	return fmt.Sprintf("%s.untranslated.json", parts[0])
 }
 
-func marshalInterface(translations []translation.Translation) []interface{} {
-	mi := make([]interface{}, len(translations))
-	for i, translation := range translations {
-		mi[i] = translation.MarshalInterface()
+func marshalInterface(translations StringMap) []interface{} {
+	mi := make([]interface{}, 0)
+	for _, translation := range translations {
+		mi = append(mi, translation.MarshalInterface())
 	}
 	return mi
 }
 
-func writeUntranslated(filename string, untranslated []translation.Translation) error {
+func writeUntranslated(filename string, untranslated StringMap) error {
 	buf, err := json.MarshalIndent(marshalInterface(untranslated), "", "  ")
 	if err != nil {
 		return err
@@ -237,9 +239,9 @@ func sift(goPath, templatesPath string) []LocalizedString {
 	return v.allStrings
 }
 
-func filterUntranslated(translated map[string]translation.Translation,
-	sifted []LocalizedString) []translation.Translation {
-	untranslated := make([]translation.Translation, 0, 0)
+func filterUntranslated(translated StringMap,
+	sifted []LocalizedString) StringMap {
+	untranslated := make(StringMap)
 	for _, xl := range sifted {
 		_, ok := translated[xl.String]
 		if !ok {
@@ -251,7 +253,7 @@ func filterUntranslated(translated map[string]translation.Translation,
 			if err != nil {
 				panic(err)
 			}
-			untranslated = append(untranslated, t)
+			untranslated[xl.String] = t
 		}
 	}
 	return untranslated
