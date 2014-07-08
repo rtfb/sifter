@@ -244,7 +244,8 @@ func filterUntranslated(translated StringMap,
 	untranslated := make(StringMap)
 	for _, xl := range sifted {
 		_, ok := translated[xl.String]
-		if !ok {
+		_, ok2 := untranslated[xl.String]
+		if !ok && !ok2 {
 			fmt.Printf("%s\n", xl.String)
 			t, err := translation.NewTranslation(map[string]interface{}{
 				"id":          xl.String,
