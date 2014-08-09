@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docopt/docopt.go"
+	"github.com/docopt/docopt-go"
 	"github.com/nicksnyder/go-i18n/i18n/translation"
 )
 
