@@ -32,6 +32,13 @@ type LocalizedString struct {
 
 type StringMap map[string]translation.Translation
 
+func isGlob(pattern string) bool {
+	if strings.ContainsAny(pattern, "*?[]") {
+		return true
+	}
+	return false
+}
+
 func getAllFiles(siftParam, ext string) []string {
 	var files []string
 	if dir, err := isDir(siftParam); err == nil && dir {
@@ -46,10 +53,15 @@ func getAllFiles(siftParam, ext string) []string {
 		})
 		return files
 	}
-	// TODO: add code to treat siftParam as a wildcard
-	//if isGlob() {
-	//return expandGlob()
-	//}
+	if isGlob(siftParam) {
+		files, err := filepath.Glob(siftParam)
+		if err != nil {
+			panic(err) // XXX: better error handling
+		}
+		if files != nil {
+			return files
+		}
+	}
 	files = append(files, siftParam)
 	return files
 }
