@@ -21,6 +21,11 @@ Options:
   --version     Show version.`
 )
 
+func mkUntranslatedName(json string) string {
+	parts := strings.Split(json, ".")
+	return fmt.Sprintf("%s.untranslated.json", parts[0])
+}
+
 func main() {
 	arguments, _ := docopt.Parse(usage, nil, true, "Sifter 0.1", false)
 	allStrings := sift(arguments["<path>"].(string), arguments["<tmpl>"].(string))

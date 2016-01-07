@@ -204,11 +204,6 @@ func loadGoi18nJson(path string) (StringMap, error) {
 	return result, nil
 }
 
-func mkUntranslatedName(json string) string {
-	parts := strings.Split(json, ".")
-	return fmt.Sprintf("%s.untranslated.json", parts[0])
-}
-
 func marshalInterface(translations StringMap) []interface{} {
 	mi := make([]interface{}, 0)
 	for _, translation := range translations {
