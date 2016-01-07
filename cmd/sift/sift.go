@@ -1,6 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"path"
+	"strings"
+
 	"github.com/docopt/docopt-go"
 	"github.com/rtfb/sifter/sifter"
 )
