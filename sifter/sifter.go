@@ -1,4 +1,4 @@
-package main
+package sifter
 
 import (
 	"encoding/json"
@@ -8,13 +8,11 @@ import (
 	"go/token"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/docopt/docopt-go"
 	"github.com/nicksnyder/go-i18n/i18n/translation"
 )
 
@@ -270,35 +268,4 @@ func filterUntranslated(translated StringMap,
 		}
 	}
 	return untranslated
-}
-
-func main() {
-	usage := `Sifter. Sifts code for untranslated strings.
-
-Looks in all *.go files under path if path is a directory or treats path as
-wildcard if it is not.
-
-Usage:
-  sift <path> <tmpl> <json>
-  sift -h | --help
-  sift --version
-
-Options:
-  -h --help     Show this screen.
-  --version     Show version.`
-
-	arguments, _ := docopt.Parse(usage, nil, true, "Sifter 0.1", false)
-	allStrings := sift(arguments["<path>"].(string), arguments["<tmpl>"].(string))
-	json := arguments["<json>"].(string)
-	translated, err := loadGoi18nJson(json)
-	if err != nil {
-		panic(err) // XXX: better error handling
-	}
-	untranslated := filterUntranslated(translated, allStrings)
-	filename := mkUntranslatedName(path.Base(json))
-	err = writeUntranslated(filename, untranslated)
-	if err != nil {
-		panic(err)
-	}
-	return
 }
