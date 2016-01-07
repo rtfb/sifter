@@ -32,15 +32,15 @@ func mkUntranslatedName(json string) string {
 
 func main() {
 	arguments, _ := docopt.Parse(usage, nil, true, "Sifter 0.1", false)
-	allStrings := sift(arguments["<path>"].(string), arguments["<tmpl>"].(string))
+	allStrings := sifter.Sift(arguments["<path>"].(string), arguments["<tmpl>"].(string))
 	json := arguments["<json>"].(string)
-	translated, err := loadGoi18nJson(json)
+	translated, err := sifter.LoadGoi18nJson(json)
 	if err != nil {
 		panic(err) // XXX: better error handling
 	}
-	untranslated := filterUntranslated(translated, allStrings)
+	untranslated := sifter.FilterUntranslated(translated, allStrings)
 	filename := mkUntranslatedName(path.Base(json))
-	err = writeUntranslated(filename, untranslated)
+	err = sifter.WriteUntranslated(filename, untranslated)
 	if err != nil {
 		panic(err)
 	}

@@ -178,7 +178,7 @@ func parseTemplates(tmpls []string) []LocalizedString {
 	return results
 }
 
-func loadGoi18nJson(path string) (StringMap, error) {
+func LoadGoi18nJson(path string) (StringMap, error) {
 	fileBytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -212,7 +212,7 @@ func marshalInterface(translations StringMap) []interface{} {
 	return mi
 }
 
-func writeUntranslated(filename string, untranslated StringMap) error {
+func WriteUntranslated(filename string, untranslated StringMap) error {
 	buf, err := json.MarshalIndent(marshalInterface(untranslated), "", "  ")
 	if err != nil {
 		return err
@@ -223,7 +223,7 @@ func writeUntranslated(filename string, untranslated StringMap) error {
 	return nil
 }
 
-func sift(goPath, templatesPath string) []LocalizedString {
+func Sift(goPath, templatesPath string) []LocalizedString {
 	var v visitor
 	allFiles := getAllFiles(goPath, ".go")
 	fmt.Printf("%#v\n", allFiles)
@@ -244,7 +244,7 @@ func sift(goPath, templatesPath string) []LocalizedString {
 	return v.allStrings
 }
 
-func filterUntranslated(translated StringMap,
+func FilterUntranslated(translated StringMap,
 	sifted []LocalizedString) StringMap {
 	untranslated := make(StringMap)
 	for _, xl := range sifted {
