@@ -30,6 +30,14 @@ func mkUntranslatedName(json string) string {
 	return fmt.Sprintf("%s.untranslated.json", parts[0])
 }
 
+func writeResult(file string, strings sifter.StringMap) {
+	filename := mkUntranslatedName(path.Base(file))
+	err := sifter.WriteUntranslated(filename, strings)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
 	arguments, _ := docopt.Parse(usage, nil, true, "Sifter 0.1", false)
 	allStrings := sifter.Sift(arguments["<path>"].(string), arguments["<tmpl>"].(string))
@@ -38,11 +46,6 @@ func main() {
 	if err != nil {
 		panic(err) // XXX: better error handling
 	}
-	untranslated := sifter.FilterUntranslated(translated, allStrings)
-	filename := mkUntranslatedName(path.Base(json))
-	err = sifter.WriteUntranslated(filename, untranslated)
-	if err != nil {
-		panic(err)
-	}
+	writeResult(json, sifter.FilterUntranslated(translated, allStrings))
 	return
 }
