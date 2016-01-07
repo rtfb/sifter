@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"path"
 	"strings"
 
@@ -31,10 +32,15 @@ func mkUntranslatedName(json string) string {
 }
 
 func writeResult(file string, strings sifter.StringMap) {
-	filename := mkUntranslatedName(path.Base(file))
-	err := sifter.WriteUntranslated(filename, strings)
+	json, err := strings.ToJSON()
 	if err != nil {
-		panic(err)
+		fmt.Printf("Failed to serialize strings: %s\n", err)
+		return
+	}
+	filename := mkUntranslatedName(path.Base(file))
+	if err = ioutil.WriteFile(filename, json, 0666); err != nil {
+		fmt.Printf("Failed to write %q because %s\n", filename, err)
+		return
 	}
 }
 

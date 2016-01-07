@@ -30,6 +30,10 @@ type LocalizedString struct {
 
 type StringMap map[string]translation.Translation
 
+func (sm StringMap) ToJSON() ([]byte, error) {
+	return json.MarshalIndent(marshalInterface(sm), "", "  ")
+}
+
 func isGlob(pattern string) bool {
 	if strings.ContainsAny(pattern, "*?[]") {
 		return true
@@ -210,17 +214,6 @@ func marshalInterface(translations StringMap) []interface{} {
 		mi = append(mi, translation.MarshalInterface())
 	}
 	return mi
-}
-
-func WriteUntranslated(filename string, untranslated StringMap) error {
-	buf, err := json.MarshalIndent(marshalInterface(untranslated), "", "  ")
-	if err != nil {
-		return err
-	}
-	if err := ioutil.WriteFile(filename, buf, 0666); err != nil {
-		return fmt.Errorf("failed to write %s because %s", filename, err)
-	}
-	return nil
 }
 
 func Sift(goPath, templatesPath string) []LocalizedString {
