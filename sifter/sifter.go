@@ -16,6 +16,19 @@ import (
 	"github.com/nicksnyder/go-i18n/i18n/translation"
 )
 
+type Sifter interface {
+	Run(goPath, templatesPath string) []LocalizedString
+	Load(path string) (StringMap, error)
+	Filter(translated StringMap, sifted []LocalizedString) StringMap
+}
+
+func NewGoI18nSifter() *GoI18nSifter {
+	return &GoI18nSifter{}
+}
+
+type GoI18nSifter struct {
+}
+
 type visitor struct {
 	allStrings []LocalizedString
 	tFunc      string
@@ -182,7 +195,7 @@ func parseTemplates(tmpls []string) []LocalizedString {
 	return results
 }
 
-func LoadGoi18nJson(path string) (StringMap, error) {
+func (s *GoI18nSifter) Load(path string) (StringMap, error) {
 	fileBytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -216,7 +229,7 @@ func marshalInterface(translations StringMap) []interface{} {
 	return mi
 }
 
-func Sift(goPath, templatesPath string) []LocalizedString {
+func (s *GoI18nSifter) Run(goPath, templatesPath string) []LocalizedString {
 	var v visitor
 	allFiles := getAllFiles(goPath, ".go")
 	fmt.Printf("%#v\n", allFiles)
@@ -237,8 +250,7 @@ func Sift(goPath, templatesPath string) []LocalizedString {
 	return v.allStrings
 }
 
-func FilterUntranslated(translated StringMap,
-	sifted []LocalizedString) StringMap {
+func (s *GoI18nSifter) Filter(translated StringMap, sifted []LocalizedString) StringMap {
 	untranslated := make(StringMap)
 	for _, xl := range sifted {
 		_, ok := translated[xl.String]
