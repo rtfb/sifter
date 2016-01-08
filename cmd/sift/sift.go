@@ -46,9 +46,11 @@ func writeResult(file string, strings sifter.StringMap) {
 
 func main() {
 	arguments, _ := docopt.Parse(usage, nil, true, "Sifter 0.1", false)
-	sifter := sifter.NewGoI18nSifter()
-	allStrings := sifter.Run(arguments["<path>"].(string), arguments["<tmpl>"].(string))
+	goPath := arguments["<path>"].(string)
+	tmplPath := arguments["<tmpl>"].(string)
 	json := arguments["<json>"].(string)
+	sifter := sifter.NewGoI18nSifter()
+	allStrings := sifter.Run(goPath, tmplPath)
 	translated, err := sifter.Load(json)
 	if err != nil {
 		panic(err) // XXX: better error handling
