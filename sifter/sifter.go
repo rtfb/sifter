@@ -48,10 +48,7 @@ func (sm StringMap) ToJSON() ([]byte, error) {
 }
 
 func isGlob(pattern string) bool {
-	if strings.ContainsAny(pattern, "*?[]") {
-		return true
-	}
-	return false
+	return strings.ContainsAny(pattern, "*?[]")
 }
 
 func getAllFiles(siftParam, ext string) []string {
