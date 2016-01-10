@@ -17,9 +17,9 @@ import (
 )
 
 type Sifter interface {
-	Run(goPath, templatesPath string) []LocalizedString
+	Run(goPath, templatesPath string) []*LocalizedString
 	Load(path string) (StringMap, error)
-	Filter(translated StringMap, sifted []LocalizedString) StringMap
+	Filter(translated StringMap, sifted []*LocalizedString) StringMap
 }
 
 func NewGoI18nSifter() *GoI18nSifter {
@@ -30,7 +30,7 @@ type GoI18nSifter struct {
 }
 
 type visitor struct {
-	allStrings []LocalizedString
+	allStrings []*LocalizedString
 	tFunc      string
 	fileSet    *token.FileSet
 }
@@ -145,7 +145,7 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 						if err != nil {
 							panic(err)
 						}
-						v.allStrings = append(v.allStrings, LocalizedString{
+						v.allStrings = append(v.allStrings, &LocalizedString{
 							String:     unquoted,
 							SourceFile: pos.Filename,
 							SourceLine: pos.Line,
@@ -168,8 +168,8 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	return v
 }
 
-func parseTemplates(tmpls []string) []LocalizedString {
-	var results []LocalizedString
+func parseTemplates(tmpls []string) []*LocalizedString {
+	var results []*LocalizedString
 	re := regexp.MustCompile(`{{L10n (".*")}}`)
 	for _, template := range tmpls {
 		data, err := ioutil.ReadFile(template)
@@ -182,7 +182,7 @@ func parseTemplates(tmpls []string) []LocalizedString {
 			if err != nil {
 				panic(err)
 			}
-			results = append(results, LocalizedString{
+			results = append(results, &LocalizedString{
 				String:     unquoted,
 				SourceFile: template,
 				SourceLine: 0,
@@ -226,7 +226,7 @@ func marshalInterface(translations StringMap) []interface{} {
 	return mi
 }
 
-func (s *GoI18nSifter) Run(goPath, templatesPath string) []LocalizedString {
+func (s *GoI18nSifter) Run(goPath, templatesPath string) []*LocalizedString {
 	var v visitor
 	allFiles := getAllFiles(goPath, ".go")
 	fmt.Printf("%#v\n", allFiles)
@@ -236,7 +236,7 @@ func (s *GoI18nSifter) Run(goPath, templatesPath string) []LocalizedString {
 		return nil
 	}
 	// Now when we have a tFunc, walk the files again, looking for the strings:
-	v.allStrings = make([]LocalizedString, 0, 0)
+	v.allStrings = make([]*LocalizedString, 0, 0)
 	v.parseAllFiles(allFiles)
 	// Also sift templates:
 	allTemplates := getAllFiles(templatesPath, ".html")
@@ -247,7 +247,7 @@ func (s *GoI18nSifter) Run(goPath, templatesPath string) []LocalizedString {
 	return v.allStrings
 }
 
-func (s *GoI18nSifter) Filter(translated StringMap, sifted []LocalizedString) StringMap {
+func (s *GoI18nSifter) Filter(translated StringMap, sifted []*LocalizedString) StringMap {
 	untranslated := make(StringMap)
 	for _, xl := range sifted {
 		_, ok := translated[xl.String]
