@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"path"
-	"strings"
 
 	"github.com/docopt/docopt-go"
 	"github.com/rtfb/sifter/sifter"
@@ -26,18 +24,12 @@ Options:
   --version     Show version.`
 )
 
-func mkUntranslatedName(json string) string {
-	parts := strings.Split(json, ".")
-	return fmt.Sprintf("%s.untranslated.json", parts[0])
-}
-
-func writeResult(file string, strings sifter.StringMap) {
+func writeResult(filename string, strings sifter.StringMap) {
 	json, err := strings.ToJSON()
 	if err != nil {
 		fmt.Printf("Failed to serialize strings: %s\n", err)
 		return
 	}
-	filename := mkUntranslatedName(path.Base(file))
 	if err = ioutil.WriteFile(filename, json, 0666); err != nil {
 		fmt.Printf("Failed to write %q because %s\n", filename, err)
 		return
@@ -49,12 +41,12 @@ func main() {
 	goPath := arguments["<path>"].(string)
 	tmplPath := arguments["<tmpl>"].(string)
 	json := arguments["<json>"].(string)
-	sifter := sifter.NewGoI18nSifter()
-	allStrings := sifter.Run(goPath, tmplPath)
-	translated, err := sifter.Load(json)
+	sifter := sifter.NewGoI18nSifter(goPath, tmplPath, json)
+	allStrings := sifter.Run()
+	translated, err := sifter.Load()
 	if err != nil {
 		panic(err) // XXX: better error handling
 	}
-	writeResult(json, sifter.Filter(translated, allStrings))
+	writeResult(sifter.OutputFileName(), sifter.Filter(translated, allStrings))
 	return
 }

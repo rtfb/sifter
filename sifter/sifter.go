@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -17,16 +18,24 @@ import (
 )
 
 type Sifter interface {
-	Run(goPath, templatesPath string) []*LocalizedString
-	Load(path string) (StringMap, error)
+	Run() []*LocalizedString
+	Load() (StringMap, error)
 	Filter(translated StringMap, sifted []*LocalizedString) StringMap
+	OutputFileName() string
 }
 
-func NewGoI18nSifter() *GoI18nSifter {
-	return &GoI18nSifter{}
+func NewGoI18nSifter(goPath, tmplPath, json string) *GoI18nSifter {
+	return &GoI18nSifter{
+		goPath:   goPath,
+		tmplPath: tmplPath,
+		json:     json,
+	}
 }
 
 type GoI18nSifter struct {
+	goPath   string
+	tmplPath string
+	json     string
 }
 
 type visitor struct {
@@ -192,8 +201,8 @@ func parseTemplates(tmpls []string) []*LocalizedString {
 	return results
 }
 
-func (s *GoI18nSifter) Load(path string) (StringMap, error) {
-	fileBytes, err := ioutil.ReadFile(path)
+func (s *GoI18nSifter) Load() (StringMap, error) {
+	fileBytes, err := ioutil.ReadFile(s.json)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +216,7 @@ func (s *GoI18nSifter) Load(path string) (StringMap, error) {
 	for i, translationData := range translationsData {
 		t, err := translation.NewTranslation(translationData)
 		if err != nil {
-			return nil, fmt.Errorf("unable to parse translation #%d in %s because %s\n%v", i, path, err, translationData)
+			return nil, fmt.Errorf("unable to parse translation #%d in %s because %s\n%v", i, s.json, err, translationData)
 		}
 		translations = append(translations, t)
 	}
@@ -226,9 +235,9 @@ func marshalInterface(translations StringMap) []interface{} {
 	return mi
 }
 
-func (s *GoI18nSifter) Run(goPath, templatesPath string) []*LocalizedString {
+func (s *GoI18nSifter) Run() []*LocalizedString {
 	var v visitor
-	allFiles := getAllFiles(goPath, ".go")
+	allFiles := getAllFiles(s.goPath, ".go")
 	fmt.Printf("%#v\n", allFiles)
 	v.parseAllFiles(allFiles)
 	if v.tFunc == "" {
@@ -239,7 +248,7 @@ func (s *GoI18nSifter) Run(goPath, templatesPath string) []*LocalizedString {
 	v.allStrings = make([]*LocalizedString, 0, 0)
 	v.parseAllFiles(allFiles)
 	// Also sift templates:
-	allTemplates := getAllFiles(templatesPath, ".html")
+	allTemplates := getAllFiles(s.tmplPath, ".html")
 	v.allStrings = append(v.allStrings, parseTemplates(allTemplates)...)
 	for _, str := range v.allStrings {
 		fmt.Printf("%s (%d): %q\n", str.SourceFile, str.SourceLine, str.String)
@@ -265,4 +274,9 @@ func (s *GoI18nSifter) Filter(translated StringMap, sifted []*LocalizedString) S
 		}
 	}
 	return untranslated
+}
+
+func (s *GoI18nSifter) OutputFileName() string {
+	parts := strings.Split(path.Base(s.json), ".")
+	return fmt.Sprintf("%s.untranslated.json", parts[0])
 }
